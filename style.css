@@ -141,6 +141,18 @@ img { display: block; max-width: 100%; }
 .tile__price { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
 .tile.is-out .tile__price { color: var(--muted); }
 
+/* Фильтр по семействам */
+.filters { display: flex; gap: 8px; overflow-x: auto; margin: -4px calc(-1 * var(--gutter)) 22px; padding: 0 var(--gutter) 4px; scrollbar-width: none; }
+.filters::-webkit-scrollbar { display: none; }
+.filter {
+  flex: 0 0 auto; padding: 8px 14px; min-height: 36px; border: 1px solid var(--rule); border-radius: 999px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap;
+}
+.filter[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.filter:focus-visible { outline: 2px solid var(--olive); outline-offset: 2px; }
+.tile__family { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--olive); margin: 10px 0 0; }
+.tile__family + .tile__title { margin-top: 4px; }
+
 /* Спреи: картинок нет — типографика */
 .tile__glyph {
   aspect-ratio: 4 / 5; display: flex; flex-direction: column; align-items: center; justify-content: center;

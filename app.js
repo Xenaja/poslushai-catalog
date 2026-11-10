@@ -50,6 +50,10 @@
     return e;
   }
   function rub(n) { return n.toLocaleString("ru-RU").replace(/ /g, " ") + " ₽"; }
+  function plural(n, one, few, many) {
+    var m10 = n % 10, m100 = n % 100;
+    return m10 === 1 && m100 !== 11 ? one : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? few : many;
+  }
   function pad(n) { return (n < 10 ? "0" : "") + n; }
   function minPrice(prices) {
     var nums = prices.map(function (p) { return p.p; }).filter(function (x) { return x != null; });
@@ -168,16 +172,31 @@
   }
 
   // ---------- отрисовка: плитки
+  var family = "";
+  function renderFilters() {
+    var box = document.getElementById("filters");
+    var fams = [];
+    C.perfumes.forEach(function (p) { if (p.family && fams.indexOf(p.family) < 0) fams.push(p.family); });
+    if (fams.length < 2) { box.hidden = true; return; }
+    box.innerHTML = "";
+    [""].concat(fams).forEach(function (f) {
+      box.appendChild(el("button", { class: "filter", type: "button", "aria-pressed": f === family ? "true" : "false", text: f || "Все",
+        onclick: function () { family = f; renderFilters(); renderPerfumes(); } }));
+    });
+  }
   function renderPerfumes() {
     var grid = document.getElementById("perfumeGrid");
-    document.getElementById("perfumesCount").textContent = C.perfumes.length + " ароматов";
-    C.perfumes.forEach(function (p) {
+    grid.innerHTML = "";
+    var list = C.perfumes.filter(function (p) { return !family || p.family === family; });
+    document.getElementById("perfumesCount").textContent = list.length + " " + plural(list.length, "аромат", "аромата", "ароматов");
+    list.forEach(function (p) {
       grid.appendChild(el("button", { class: "tile" + (p.inStock ? "" : " is-out"), type: "button", onclick: function () { openPerfume(p); } }, [
         el("div", { class: "tile__img" }, [
           p.img ? el("img", { src: p.img, alt: "", loading: "lazy", decoding: "async" }) : null,
           el("span", { class: "tile__num", text: "№" + pad(p.n) }),
           p.inStock ? null : el("span", { class: "tile__badge", text: "нет в наличии" }),
         ]),
+        p.family ? el("p", { class: "tile__family", text: p.family }) : null,
         el("div", { class: "tile__title", text: p.title }),
         el("p", { class: "tile__tag", text: p.tagline || p.about }),
         el("div", { class: "tile__price", text: minPrice(p.prices) }),
@@ -193,11 +212,14 @@
   function renderSprays() {
     var grid = document.getElementById("sprayGrid");
     if (!C.sprays.length) { document.getElementById("sprays").hidden = true; return; }
+    var intro = document.getElementById("spraysIntro");
+    if (C.info.sprays_intro) intro.textContent = C.info.sprays_intro; else intro.hidden = true;
     C.sprays.forEach(function (s) {
       var g = glyph(s);
       grid.appendChild(el("button", { class: "tile" + (s.inStock ? "" : " is-out"), type: "button", onclick: function () { openSpray(s); } }, [
         s.img ? el("div", { class: "tile__img" }, [el("img", { src: s.img, alt: "", loading: "lazy" })])
               : el("div", { class: "tile__glyph" + (g.word ? " is-word" : ""), "aria-hidden": "true" }, [el("span", { text: g.text })]),
+        s.family ? el("p", { class: "tile__family", text: s.family }) : null,
         el("div", { class: "tile__title", text: s.title }),
         el("p", { class: "tile__tag", text: (s.subtitle || "").replace(/^[　-鿿]+\s*—\s*/, "") || "Спрей для дома и тела" }),
         el("div", { class: "tile__price", text: s.prices.map(function (x) { return x.v; }).join(" · ") + (minPrice(s.prices) ? " · " + minPrice(s.prices) : "") }),
@@ -287,7 +309,7 @@
     openSheet([
       p.img ? el("div", { class: "pd__img" }, [el("img", { src: p.img, alt: "Метафорическая карта аромата «" + p.title + "»" })]) : null,
       el("div", { class: "pd" }, [
-        el("p", { class: "label", text: "Масляные духи · №" + pad(p.n) }),
+        el("p", { class: "label", text: "Масляные духи · №" + pad(p.n) + (p.family ? " · " + p.family : "") }),
         el("h2", { class: "pd__title", text: p.title }),
         p.tagline ? el("p", { class: "pd__tag", text: p.tagline }) : null,
         p.smell ? el("p", { class: "pd__text", text: p.smell }) : null,
@@ -309,6 +331,7 @@
         s.subtitle ? el("p", { class: "pd__tag", text: s.subtitle }) : null,
         s.smell ? el("p", { class: "pd__text", text: s.smell }) : null,
         notesBlock(notesFromText(s.notes)),
+        s.effect ? el("div", { class: "pd__effect" }, [el("p", { class: "label", text: "Эффект" }), el("p", { text: s.effect })]) : null,
         buyBlock(s, s.prices, "s"),
       ]),
     ]);
@@ -366,7 +389,7 @@
   document.getElementById("vkLink").href = C.vk;
   if (C.policy) { var pl = document.getElementById("policyLink"); pl.href = C.policy; pl.hidden = false; }
 
-  renderPromo(); renderPerfumes(); renderSprays(); renderInfo(); renderBar();
+  renderPromo(); renderFilters(); renderPerfumes(); renderSprays(); renderInfo(); renderBar();
 
   if (tg) {
     try {
