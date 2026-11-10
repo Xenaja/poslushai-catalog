@@ -30,7 +30,7 @@
   function valid(it) {
     if (it.kind === "p") { var p = perfume(it.n); return p && p.inStock && p.prices.some(function (x) { return x.ml === it.ml; }); }
     if (it.kind === "s") { var s = spray(it.n); return s && s.inStock; }
-    if (it.kind === "n") return !!(C.promo && C.promo.set) && isPromo;
+    if (it.kind === "n") return !!(C.promo && C.promo.set);
     return false;
   }
 
@@ -49,7 +49,8 @@
     (children || []).forEach(function (c) { if (c != null) e.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
     return e;
   }
-  function rub(n) { return n.toLocaleString("ru-RU").replace(/ /g, " ") + " ₽"; }
+  // Неразрывные пробелы: «1 950 ₽» не рвётся переносом.
+  function rub(n) { return n.toLocaleString("ru-RU").replace(/\s/g, " ") + " ₽"; }
   function plural(n, one, few, many) {
     var m10 = n % 10, m100 = n % 100;
     return m10 === 1 && m100 !== 11 ? one : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? few : many;
@@ -148,39 +149,40 @@
   }
 
   // ---------- отрисовка: предложение
+  // Цена набора. Всем — обычная цена и сравнение «по отдельности»;
+  // участнику (промо-ссылка или введённый код) — цена по промокоду.
   function setPrice(set) {
     var box = el("span", { class: "promo__price" });
-    if (set.promoPrice == null || set.promoPrice === set.price) { box.textContent = set.label; return box; }
-    if (isPromo) {
-      box.appendChild(el("s", { class: "promo__old", text: set.label }));
-      box.appendChild(document.createTextNode(" " + set.promoLabel));
-    } else {
-      box.appendChild(document.createTextNode(set.label));
-      box.appendChild(el("span", { class: "promo__alt", text: "по промокоду — " + set.promoLabel }));
+    var promo = isPromo && set.promoPrice != null && set.promoPrice !== set.price;
+    var now = promo ? set.promoPrice : set.price;
+    function fmt(n, label) { return n != null ? rub(n) : label; }
+    if (promo) box.appendChild(el("s", { class: "promo__old", text: fmt(set.price, set.label) }));
+    box.appendChild(el("span", { class: "promo__now", text: promo ? fmt(set.promoPrice, set.promoLabel) : fmt(set.price, set.label) }));
+    if (set.separate && now != null && set.separate > now) {
+      box.appendChild(el("span", { class: "promo__alt", text: "3 роллера по отдельности — " + rub(set.separate) }));
+      box.appendChild(el("span", { class: "promo__save", text: "выгода " + rub(set.separate - now) }));
     }
     return box;
   }
-  // Предложение розыгрыша видят только участники: ?promo=1 из бота
-  // или введённый промокод. Остальным — ни слова о скидках (решено 10.11).
+  // Набор видят все («Предложение ноября»). Скидку по коду, доставку и сам
+  // код — только участники розыгрыша (решено 10.11).
   function renderPromo() {
     var box = document.getElementById("promo");
     box.innerHTML = "";
-    if (!C.promo || !C.promo.set || !isPromo) { box.hidden = true; return; }
+    if (!C.promo || !C.promo.set) { box.hidden = true; return; }
     var set = C.promo.set;
     box.hidden = false;
-    var perks = el("ul", { class: "promo__perks" }, [
-      el("li", {}, isPromo
-        ? ["Скидка 15% на любой заказ по промокоду", el("span", { class: "promo__code", text: C.promo.code })]
-        : ["Скидка 15% для участников розыгрыша — промокод в боте"]),
+    var perks = isPromo ? el("ul", { class: "promo__perks" }, [
+      el("li", {}, ["Скидка 15% на любой заказ по промокоду", el("span", { class: "promo__code", text: C.promo.code })]),
       C.promo.deliveryFrom ? el("li", { text: "Бесплатная доставка до ПВЗ при заказе от " + C.promo.deliveryFrom + " ₽" }) : null,
       C.promo.until ? el("li", { text: "До " + C.promo.until }) : null,
-    ]);
-    box.appendChild(el("p", { class: "label", text: "Для участников розыгрыша" }));
+    ]) : null;
+    box.appendChild(el("p", { class: "label", text: isPromo ? "Для участников розыгрыша" : (set.badge || "Специальное предложение") }));
     box.appendChild(el("h2", { class: "promo__title", text: set.title }));
     box.appendChild(el("p", { class: "promo__sub", text: set.subtitle }));
     box.appendChild(el("div", { class: "promo__items" }, set.items.map(function (t) { return el("span", { text: t }); })));
     box.appendChild(el("p", { class: "promo__text", text: set.text.split("\n\n")[0] }));
-    box.appendChild(perks);
+    if (perks) box.appendChild(perks);
     box.appendChild(el("div", { class: "promo__row" }, [
       setPrice(set),
       el("button", { class: "btn btn--light", type: "button", text: "В корзину", onclick: function () { add({ kind: "n", n: 0, ml: 0 }); toast("Набор в корзине"); } }),
