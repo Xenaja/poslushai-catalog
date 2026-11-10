@@ -79,8 +79,9 @@
       var s = spray(it.n), sp = s.prices[0] || { v: "", p: null, label: "по запросу" };
       return { name: "Спрей «" + s.title + "»", meta: sp.v, price: sp.p, label: sp.label };
     }
-    var set = C.promo.set;
-    return { name: "Набор «" + set.title + "»", meta: "3 × 2 мл", price: set.price, label: set.label };
+    var set = C.promo.set, promo = isPromo && set.promoPrice != null;
+    return { name: "Набор «" + set.title + "»", meta: "3 × 2 мл" + (promo ? " · по промокоду" : ""),
+      price: promo ? set.promoPrice : set.price, label: promo ? set.promoLabel : set.label };
   }
   function totals() {
     var sum = 0, open = false, count = 0;
@@ -147,6 +148,18 @@
   }
 
   // ---------- отрисовка: предложение
+  function setPrice(set) {
+    var box = el("span", { class: "promo__price" });
+    if (set.promoPrice == null || set.promoPrice === set.price) { box.textContent = set.label; return box; }
+    if (isPromo) {
+      box.appendChild(el("s", { class: "promo__old", text: set.label }));
+      box.appendChild(document.createTextNode(" " + set.promoLabel));
+    } else {
+      box.appendChild(document.createTextNode(set.label));
+      box.appendChild(el("span", { class: "promo__alt", text: "по промокоду — " + set.promoLabel }));
+    }
+    return box;
+  }
   function renderPromo() {
     var box = document.getElementById("promo");
     if (!C.promo || !C.promo.set) return;
@@ -156,7 +169,7 @@
       el("li", {}, isPromo
         ? ["Скидка 15% на любой заказ по промокоду", el("span", { class: "promo__code", text: C.promo.code })]
         : ["Скидка 15% для участников розыгрыша — промокод в боте"]),
-      el("li", { text: "Бесплатная доставка до ПВЗ при заказе от 2000 ₽" }),
+      C.promo.deliveryFrom ? el("li", { text: "Бесплатная доставка до ПВЗ при заказе от " + C.promo.deliveryFrom + " ₽" }) : null,
       C.promo.until ? el("li", { text: "До " + C.promo.until }) : null,
     ]);
     box.appendChild(el("p", { class: "label", text: "Для участников розыгрыша" }));
@@ -166,7 +179,7 @@
     box.appendChild(el("p", { class: "promo__text", text: set.text.split("\n\n")[0] }));
     box.appendChild(perks);
     box.appendChild(el("div", { class: "promo__row" }, [
-      el("span", { class: "promo__price", text: set.price != null ? rub(set.price) : "Цена — " + set.label }),
+      setPrice(set),
       el("button", { class: "btn btn--light", type: "button", text: "В корзину", onclick: function () { add({ kind: "n", n: 0, ml: 0 }); toast("Набор в корзине"); } }),
     ]));
   }
@@ -359,7 +372,11 @@
     });
     nodes.push(el("div", { class: "cart__total" }, [el("span", { text: "Итого" }), el("b", { text: rub(t.sum) + (t.open ? " +" : "") })]));
     var note = [];
-    if (isPromo && C.promo) note.push("Промокод " + C.promo.code + ": −15% учтём при оформлении. Доставка до ПВЗ бесплатно от 2000 ₽.");
+    if (isPromo && C.promo) {
+      var hasSet = cart.some(function (it) { return it.kind === "n"; });
+      note.push("Промокод " + C.promo.code + ": −15% на духи и спреи учтём при оформлении" + (hasSet ? " (набор уже по цене промокода)" : "") + "." +
+        (C.promo.deliveryFrom ? " Доставка до ПВЗ бесплатно от " + C.promo.deliveryFrom + " ₽." : ""));
+    }
     if (t.open) note.push("У части позиций цена по запросу — менеджер подтвердит итог.");
     note.push("Оформление — в чате с ботом: имя, телефон и пункт выдачи. Ответим там же.");
     nodes.push(el("p", { class: "cart__note", text: note.join("\n") }));

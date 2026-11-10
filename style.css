@@ -97,6 +97,8 @@ img { display: block; max-width: 100%; }
 }
 .promo__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .promo__price { font-family: var(--mono); font-size: 14px; letter-spacing: .06em; }
+.promo__old { color: #a8988a; margin-right: 2px; }
+.promo__alt { display: block; font-size: 11px; color: #b9a995; margin-top: 4px; letter-spacing: .04em; }
 
 /* ---------- разделы */
 .section { padding: 36px var(--gutter) 8px; }
