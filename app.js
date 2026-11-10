@@ -30,7 +30,7 @@
   function valid(it) {
     if (it.kind === "p") { var p = perfume(it.n); return p && p.inStock && p.prices.some(function (x) { return x.ml === it.ml; }); }
     if (it.kind === "s") { var s = spray(it.n); return s && s.inStock; }
-    if (it.kind === "n") return !!(C.promo && C.promo.set);
+    if (it.kind === "n") return !!(C.promo && C.promo.set) && isPromo;
     return false;
   }
 
@@ -160,9 +160,12 @@
     }
     return box;
   }
+  // Предложение розыгрыша видят только участники: ?promo=1 из бота
+  // или введённый промокод. Остальным — ни слова о скидках (решено 10.11).
   function renderPromo() {
     var box = document.getElementById("promo");
-    if (!C.promo || !C.promo.set) return;
+    box.innerHTML = "";
+    if (!C.promo || !C.promo.set || !isPromo) { box.hidden = true; return; }
     var set = C.promo.set;
     box.hidden = false;
     var perks = el("ul", { class: "promo__perks" }, [
@@ -380,6 +383,7 @@
     if (t.open) note.push("У части позиций цена по запросу — менеджер подтвердит итог.");
     note.push("Оформление — в чате с ботом: имя, телефон и пункт выдачи. Ответим там же.");
     nodes.push(el("p", { class: "cart__note", text: note.join("\n") }));
+    if (C.promo && !isPromo) nodes.push(codeForm());
     var actions = el("div", { class: "pd__actions" });
     if (inTelegram) actions.appendChild(el("button", { class: "btn", type: "button", text: "Оформить в боте", onclick: checkoutTelegram }));
     else if (inVK) actions.appendChild(el("button", { class: "btn", type: "button", text: "Оформить в чате ВК", onclick: checkoutVK }));
@@ -389,6 +393,31 @@
     }
     nodes.push(actions);
     openSheet([el("div", { class: "cart" }, nodes)]);
+  }
+
+  function codeForm() {
+    var input = el("input", { class: "code__input", type: "text", autocomplete: "off", autocapitalize: "characters",
+      spellcheck: "false", placeholder: "Промокод", "aria-label": "Промокод" });
+    var msg = el("p", { class: "code__msg", role: "status" });
+    function apply(e) {
+      e.preventDefault();
+      var v = input.value.replace(/\s+/g, "").toUpperCase();
+      if (!v) { input.focus(); return; }
+      if (v === String(C.promo.code).toUpperCase()) {
+        isPromo = true; save("poslushai-promo", true);
+        renderPromo(); renderBar(); haptic("medium");
+        toast("Промокод принят");
+        openCart();
+      } else {
+        msg.textContent = "Такого промокода нет — проверьте написание.";
+        input.select();
+      }
+    }
+    return el("form", { class: "code", onsubmit: apply }, [
+      el("label", { class: "label", text: "Есть промокод?" }),
+      el("div", { class: "code__row" }, [input, el("button", { class: "btn btn--ghost code__btn", type: "submit", text: "Применить" })]),
+      msg,
+    ]);
   }
 
   function renderBar() {
