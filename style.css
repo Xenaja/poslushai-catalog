@@ -9,8 +9,10 @@
   --olive: #5d5e3b;
   --night: #2b1714;
   --night-ink: #efe6da;
-  --serif: "Cormorant Garamond", "Times New Roman", serif;
-  --mono: "IBM Plex Mono", ui-monospace, "Courier New", monospace;
+  /* Заголовки — Oranienbaum, текст — Bona Nova, подписи и цены — Tenor Sans */
+  --display: "Oranienbaum", "Bona Nova", Georgia, serif;
+  --serif: "Bona Nova", Georgia, serif;
+  --mono: "Tenor Sans", "Helvetica Neue", Arial, sans-serif;
   --gutter: 20px;
   --safe-b: env(safe-area-inset-bottom, 0px);
 }
@@ -22,9 +24,9 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--serif);
-  font-size: 19px;
-  line-height: 1.45;
-  font-weight: 500;
+  font-size: 17px;
+  line-height: 1.55;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
 }
 body.locked { overflow: hidden; }
@@ -50,8 +52,8 @@ img { display: block; max-width: 100%; }
   background: var(--paper);
   border-bottom: 1px solid var(--rule);
 }
-.top__brand {
-  font-family: var(--serif); font-weight: 600;
+.top__brand { font-family: var(--display);
+  font-weight: 400;
   font-size: 22px; letter-spacing: .28em; text-transform: uppercase;
 }
 .top__cart {
@@ -61,8 +63,8 @@ img { display: block; max-width: 100%; }
 
 /* ---------- первый экран */
 .hero { padding: 40px var(--gutter) 36px; border-bottom: 1px solid var(--rule); }
-.hero__title {
-  font-weight: 500; font-size: 40px; line-height: 1.05;
+.hero__title { font-family: var(--display);
+  font-weight: 400; font-size: 40px; line-height: 1.05;
   margin: 18px 0 18px; letter-spacing: -.005em;
 }
 .hero__title em { font-style: italic; color: var(--olive); }
@@ -74,8 +76,8 @@ img { display: block; max-width: 100%; }
   padding: 36px var(--gutter) 32px;
 }
 .promo .label { color: #b9a995; }
-.promo__title {
-  font-size: 34px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase;
+.promo__title { font-family: var(--display);
+  font-size: 34px; font-weight: 400; letter-spacing: .14em; text-transform: uppercase;
   margin: 14px 0 6px; line-height: 1.1;
 }
 .promo__sub { font-style: italic; margin: 0 0 18px; color: #d8cbbb; }
@@ -107,8 +109,8 @@ img { display: block; max-width: 100%; }
 .section { padding: 36px var(--gutter) 8px; }
 .section + .section { border-top: 1px solid var(--rule); }
 .section__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
-.section__title {
-  margin: 0; font-weight: 500; font-size: 22px; letter-spacing: .14em; text-transform: uppercase;
+.section__title { font-family: var(--display);
+  margin: 0; font-weight: 400; font-size: 22px; letter-spacing: .14em; text-transform: uppercase;
 }
 .section__lead { margin: -8px 0 22px; color: var(--muted); }
 
@@ -140,7 +142,7 @@ img { display: block; max-width: 100%; }
   border: 1px solid var(--ink); background: var(--paper); padding: 3px 7px; border-radius: 50%;
   border-radius: 999px;
 }
-.tile__title { font-size: 22px; line-height: 1.1; margin: 12px 0 4px; }
+.tile__title { font-family: var(--display); font-size: 22px; line-height: 1.1; margin: 12px 0 4px; }
 .tile__tag { font-style: italic; color: var(--muted); font-size: 16px; line-height: 1.3; margin: 0 0 8px;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .tile__price { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
@@ -184,7 +186,7 @@ img { display: block; max-width: 100%; }
 
 /* ---------- подвал */
 .foot { padding: 36px var(--gutter) calc(110px + var(--safe-b)); border-top: 1px solid var(--rule); }
-.foot__brand { font-size: 30px; letter-spacing: .3em; text-transform: uppercase; margin-bottom: 8px; }
+.foot__brand { font-family: var(--display); font-size: 30px; letter-spacing: .3em; text-transform: uppercase; margin-bottom: 8px; }
 .foot__links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 16px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; }
 
 /* ---------- кнопки */
@@ -243,7 +245,7 @@ img { display: block; max-width: 100%; }
 .pd__img img { width: 100%; height: 100%; object-fit: cover; }
 .pd__glyph { aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; background: var(--paper-2); font-size: 64px; color: var(--olive); letter-spacing: .1em; }
 .pd { padding: 24px var(--gutter) 0; }
-.pd__title { font-size: 34px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; line-height: 1.1; margin: 10px 0 8px; }
+.pd__title { font-family: var(--display); font-size: 34px; font-weight: 400; letter-spacing: .12em; text-transform: uppercase; line-height: 1.1; margin: 10px 0 8px; }
 .pd__tag { font-style: italic; color: var(--olive); margin: 0 0 18px; font-size: 20px; }
 .pd__text { margin: 0 0 16px; white-space: pre-line; }
 .pd__muted { color: var(--muted); }
@@ -267,7 +269,7 @@ img { display: block; max-width: 100%; }
 
 /* корзина */
 .cart { padding: 28px var(--gutter) 0; }
-.cart__title { font-size: 30px; letter-spacing: .16em; text-transform: uppercase; font-weight: 500; margin: 0 0 18px; }
+.cart__title { font-family: var(--display); font-size: 30px; letter-spacing: .16em; text-transform: uppercase; font-weight: 400; margin: 0 0 18px; }
 .line { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; padding: 14px 0; border-top: 1px solid var(--rule); }
 .line:last-of-type { border-bottom: 1px solid var(--rule); }
 .line__name { font-size: 20px; line-height: 1.2; }
