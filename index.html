@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ece7df">
+<title>Послушай — каталог</title>
+<meta name="description" content="Натуральные масляные духи и спреи «Послушай». К каждому аромату — музыка и метафорическая карта.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=1">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="top__brand">Послушай</div>
+  <button class="top__cart" id="cartOpen" type="button" aria-label="Корзина">Корзина <span id="cartCount">(0)</span></button>
+</header>
+
+<main>
+  <section class="hero">
+    <p class="label">Масляные духи · спреи для дома и тела</p>
+    <h1 class="hero__title">Ароматы, которые<br><em>можно услышать</em></h1>
+    <p class="hero__text">Натуральные духи ручной работы. К каждому аромату — музыка и метафорическая карта: их пришлёт бот.</p>
+  </section>
+
+  <section class="promo" id="promo" hidden></section>
+
+  <section class="section" id="perfumes">
+    <div class="section__head">
+      <h2 class="section__title">Масляные духи</h2>
+      <span class="label" id="perfumesCount"></span>
+    </div>
+    <div class="grid" id="perfumeGrid"></div>
+  </section>
+
+  <section class="section" id="sprays">
+    <div class="section__head">
+      <h2 class="section__title">Спреи для дома и тела</h2>
+    </div>
+    <p class="section__lead">Без спирта, на водно-масляной основе, безопасны для кожи и дыхательных путей.</p>
+    <div class="grid grid--sprays" id="sprayGrid"></div>
+  </section>
+
+  <section class="section" id="info">
+    <div class="acc" id="infoList"></div>
+  </section>
+
+  <footer class="foot">
+    <div class="foot__brand">Послушай</div>
+    <p class="label">Заказ и вопросы — в чате с ботом</p>
+    <div class="foot__links">
+      <a id="tgLink" href="#">Телеграм</a>
+      <a id="vkLink" href="#">ВКонтакте</a>
+      <a id="policyLink" href="#" hidden>Политика обработки данных</a>
+    </div>
+  </footer>
+</main>
+
+<div class="bar" id="bar" hidden>
+  <button type="button" class="bar__btn" id="barBtn">
+    <span id="barText">Корзина</span>
+    <span class="bar__go">Оформить →</span>
+  </button>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet__backdrop" data-close></div>
+  <div class="sheet__panel" role="dialog" aria-modal="true">
+    <button class="sheet__close" type="button" data-close aria-label="Закрыть">×</button>
+    <div class="sheet__body" id="sheetBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="data.js?v=1"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
