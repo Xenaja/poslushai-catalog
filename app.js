@@ -89,16 +89,31 @@
       return { name: "Спрей «" + s.title + "»", meta: sp.v, price: sp.p, label: sp.label };
     }
     var set = C.promo.set, promo = isPromo && set.promoPrice != null;
-    return { name: "Набор «" + set.title + "»" + swapLabel(it.sw), meta: "3 × 2 мл" + (promo ? " · по промокоду" : ""),
-      price: promo ? set.promoPrice : set.price, label: promo ? set.promoLabel : set.label };
+    // «3 роллера по 2 мл», а не «3 × 2 мл»: бот читает «×N» как количество.
+    return { name: "Набор «" + set.title + "»" + swapLabel(it.sw), meta: "3 роллера по 2 мл", set: true,
+      price: promo ? set.promoPrice : set.price, label: promo ? set.promoLabel + " по промокоду" : set.label };
+  }
+  // Сумма строки. С промокодом: духи и спреи −discount%, набор — по своей цене.
+  // Округление до рубля как в боте (552,5 → 553), чтобы суммы совпадали.
+  function lineSum(it) {
+    var li = lineInfo(it);
+    if (li.price == null) return null;
+    var off = isPromo && C.promo && C.promo.discount && !li.set ? (100 - C.promo.discount) / 100 : 1;
+    return Math.floor(li.price * it.q * off + 0.5);
+  }
+  // Без скидки: набор — по обычной цене (как в боте).
+  function fullSum(it) {
+    var li = lineInfo(it);
+    if (li.price == null) return null;
+    return (li.set && C.promo.set.price != null ? C.promo.set.price : li.price) * it.q;
   }
   function totals() {
-    var sum = 0, open = false, count = 0;
+    var sum = 0, full = 0, open = false, count = 0;
     cart.forEach(function (it) {
-      var li = lineInfo(it); count += it.q;
-      if (li.price == null) open = true; else sum += li.price * it.q;
+      var ls = lineSum(it), fs = fullSum(it); count += it.q;
+      if (ls == null) open = true; else { sum += ls; full += fs; }
     });
-    return { sum: sum, open: open, count: count };
+    return { sum: sum, full: full, open: open, count: count };
   }
   function cartCode() {
     return cart.map(function (it) {
@@ -429,7 +444,7 @@
       var li = lineInfo(it);
       nodes.push(el("div", { class: "line" }, [
         el("div", {}, [el("div", { class: "line__name", text: li.name }), el("div", { class: "line__meta", text: li.meta + " · " + li.label })]),
-        el("div", { class: "line__sum", text: li.price != null ? rub(li.price * it.q) : "по запросу" }),
+        el("div", { class: "line__sum", text: lineSum(it) != null ? rub(lineSum(it)) : "по запросу" }),
         el("div", { class: "qty" }, [
           el("button", { type: "button", "aria-label": "Меньше", text: "−", onclick: function () { setQty(it, it.q - 1); openCart(); } }),
           el("span", { text: String(it.q) }),
@@ -441,8 +456,10 @@
     var note = [];
     if (isPromo && C.promo) {
       var hasSet = cart.some(function (it) { return it.kind === "n"; });
-      note.push("Промокод " + C.promo.code + ": −15% на духи и спреи учтём при оформлении" + (hasSet ? " (набор уже по цене промокода)" : "") + "." +
-        (C.promo.deliveryFrom ? " Доставка до ПВЗ бесплатно от " + C.promo.deliveryFrom + " ₽." : ""));
+      var need = +C.promo.deliveryFrom || 0;
+      note.push("Промокод " + C.promo.code + ": −" + C.promo.discount + "% на духи и спреи уже в сумме" + (hasSet ? ", набор — по цене промокода" : "") +
+        (t.full > t.sum ? " (без скидки — " + rub(t.full) + ")" : "") + "." +
+        (need ? (t.sum >= need ? " Доставка до ПВЗ — бесплатно." : " До бесплатной доставки до ПВЗ — ещё " + rub(need - t.sum) + ".") : ""));
     }
     if (t.open) note.push("У части позиций цена по запросу — менеджер подтвердит итог.");
     note.push("Оформление — в чате с ботом: имя, телефон и пункт выдачи. Ответим там же.");

@@ -484,6 +484,7 @@ window.CATALOG = {
   "code": "SVET15",
   "until": "",
   "deliveryFrom": "1500",
+  "discount": 15,
   "set": {
    "title": "Свет внутри",
    "subtitle": "Специальный набор — три роллера по 2 мл",
