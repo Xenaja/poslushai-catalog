@@ -81,7 +81,7 @@
       return { name: "Спрей «" + s.title + "»", meta: sp.v, price: sp.p, label: sp.label };
     }
     var set = C.promo.set, promo = isPromo && set.promoPrice != null;
-    return { name: "Набор «" + set.title + "»", meta: "3 × 2 мл" + (promo ? " · по промокоду" : ""),
+    return { name: "Набор «" + set.title + "»" + swapLabel(it.sw), meta: "3 × 2 мл" + (promo ? " · по промокоду" : ""),
       price: promo ? set.promoPrice : set.price, label: promo ? set.promoLabel : set.label };
   }
   function totals() {
@@ -94,7 +94,7 @@
   }
   function cartCode() {
     return cart.map(function (it) {
-      var code = it.kind === "p" ? it.n + "m" + it.ml : it.kind === "s" ? "s" + it.n : "n";
+      var code = it.kind === "p" ? it.n + "m" + it.ml : it.kind === "s" ? "s" + it.n : "n" + (it.sw ? "w" + it.sw : "");
       return code + (it.q > 1 ? "x" + it.q : "");
     }).join("-");
   }
@@ -110,13 +110,21 @@
   }
 
   function add(item) {
-    var same = cart.filter(function (it) { return it.kind === item.kind && it.n === item.n && it.ml === item.ml; })[0];
+    var same = cart.filter(function (it) { return it.kind === item.kind && it.n === item.n && it.ml === item.ml && (it.sw || "") === (item.sw || ""); })[0];
     if (same) same.q += 1; else cart.push(Object.assign({ q: 1 }, item));
     save(STORE, cart); renderBar(); haptic("medium");
   }
   function setQty(it, q) {
     if (q <= 0) cart.splice(cart.indexOf(it), 1); else it.q = Math.min(q, 9);
     save(STORE, cart); renderBar();
+  }
+
+  // Замена в наборе: sw = "3t1" — №3 заменить на №1.
+  function swapLabel(sw) {
+    var m = /^(\d+)t(\d+)$/.exec(sw || "");
+    if (!m) return "";
+    var a = perfume(+m[1]), b = perfume(+m[2]);
+    return a && b ? " (" + a.title + " → " + b.title + ")" : "";
   }
 
   // ---------- оформление
@@ -177,44 +185,75 @@
       C.promo.deliveryFrom ? el("li", { text: "Бесплатная доставка до ПВЗ при заказе от " + C.promo.deliveryFrom + " ₽" }) : null,
       C.promo.until ? el("li", { text: "До " + C.promo.until }) : null,
     ]) : null;
+    if (set.img) box.appendChild(el("div", { class: "promo__img" }, [el("img", { src: set.img, alt: "Набор «" + set.title + "»: " + set.items.join(", "), loading: "lazy" })]));
     box.appendChild(el("p", { class: "label", text: isPromo ? "Для участников розыгрыша" : (set.badge || "Специальное предложение") }));
     box.appendChild(el("h2", { class: "promo__title", text: set.title }));
     box.appendChild(el("p", { class: "promo__sub", text: set.subtitle }));
     box.appendChild(el("div", { class: "promo__items" }, set.items.map(function (t) { return el("span", { text: t }); })));
     box.appendChild(el("p", { class: "promo__text", text: set.text.split("\n\n")[0] }));
     if (perks) box.appendChild(perks);
+    var swap = swapBlock(set);
+    if (swap.node) box.appendChild(swap.node);
     box.appendChild(el("div", { class: "promo__row" }, [
       setPrice(set),
-      el("button", { class: "btn btn--light", type: "button", text: "В корзину", onclick: function () { add({ kind: "n", n: 0, ml: 0 }); toast("Набор в корзине"); } }),
+      el("button", { class: "btn btn--light", type: "button", text: "В корзину", onclick: function () {
+        var sw = swap.value();
+        add({ kind: "n", n: 0, ml: 0, sw: sw });
+        toast("Набор в корзине" + swapLabel(sw));
+      } }),
     ]));
   }
 
+  // «Можно поменять один аромат в наборе на другой из каталога» (11.11)
+  function swapBlock(set) {
+    var ns = set.itemNs || [];
+    var others = C.perfumes.filter(function (p) { return p.inStock && ns.indexOf(p.n) < 0; });
+    if (!set.swapNote || !ns.length || !others.length) return { node: null, value: function () { return ""; } };
+    var from = el("select", { class: "swap__select", "aria-label": "Какой аромат заменить" },
+      [el("option", { value: "", text: "Без замены" })].concat(ns.map(function (n) { return el("option", { value: String(n), text: "Заменить «" + perfume(n).title + "»" }); })));
+    var to = el("select", { class: "swap__select", "aria-label": "На какой аромат", disabled: true },
+      others.map(function (p) { return el("option", { value: String(p.n), text: "на «" + p.title + "»" }); }));
+    from.addEventListener("change", function () { to.disabled = !from.value; });
+    var node = el("div", { class: "swap" }, [
+      el("p", { class: "swap__note", text: set.swapNote }),
+      el("div", { class: "swap__row" }, [from, to]),
+    ]);
+    return { node: node, value: function () { return from.value ? from.value + "t" + to.value : ""; } };
+  }
+
   // ---------- отрисовка: плитки
+  // Фильтр по семействам: у аромата их может быть несколько, фильтр
+  // действует и на духи, и на спреи (11.11).
   var family = "";
+  function fams(x) { return x.families || []; }
+  function matches(x) { return !family || fams(x).indexOf(family) >= 0; }
   function renderFilters() {
     var box = document.getElementById("filters");
-    var fams = [];
-    C.perfumes.forEach(function (p) { if (p.family && fams.indexOf(p.family) < 0) fams.push(p.family); });
-    if (fams.length < 2) { box.hidden = true; return; }
+    var all = (C.familyOrder || []).slice();
+    C.perfumes.concat(C.sprays).forEach(function (x) { fams(x).forEach(function (f) { if (all.indexOf(f) < 0) all.push(f); }); });
+    if (all.length < 2) { box.hidden = true; return; }
     box.innerHTML = "";
-    [""].concat(fams).forEach(function (f) {
+    [""].concat(all).forEach(function (f) {
       box.appendChild(el("button", { class: "filter", type: "button", "aria-pressed": f === family ? "true" : "false", text: f || "Все",
-        onclick: function () { family = f; renderFilters(); renderPerfumes(); } }));
+        onclick: function () { family = f; renderFilters(); renderPerfumes(); renderSprays(); } }));
     });
+  }
+  function noPhoto(x) {
+    return el("div", { class: "tile__glyph is-word", "aria-hidden": "true" }, [el("span", { text: x.title })]);
   }
   function renderPerfumes() {
     var grid = document.getElementById("perfumeGrid");
     grid.innerHTML = "";
-    var list = C.perfumes.filter(function (p) { return !family || p.family === family; });
+    var list = C.perfumes.filter(matches);
     document.getElementById("perfumesCount").textContent = list.length + " " + plural(list.length, "аромат", "аромата", "ароматов");
     list.forEach(function (p) {
       grid.appendChild(el("button", { class: "tile" + (p.inStock ? "" : " is-out"), type: "button", onclick: function () { openPerfume(p); } }, [
-        el("div", { class: "tile__img" }, [
-          p.img ? el("img", { src: p.img, alt: "", loading: "lazy", decoding: "async" }) : null,
+        el("div", { class: "tile__img" + (p.img ? "" : " is-empty") }, [
+          p.img ? el("img", { src: p.img, alt: "Флакон «" + p.title + "»", loading: "lazy", decoding: "async" }) : noPhoto(p),
           el("span", { class: "tile__num", text: "№" + pad(p.n) }),
           p.inStock ? null : el("span", { class: "tile__badge", text: "нет в наличии" }),
         ]),
-        p.family ? el("p", { class: "tile__family", text: p.family }) : null,
+        fams(p).length ? el("p", { class: "tile__family", text: fams(p).join(" · ") }) : null,
         el("div", { class: "tile__title", text: p.title }),
         el("p", { class: "tile__tag", text: p.tagline || p.about }),
         el("div", { class: "tile__price", text: minPrice(p.prices) }),
@@ -229,15 +268,18 @@
   }
   function renderSprays() {
     var grid = document.getElementById("sprayGrid");
-    if (!C.sprays.length) { document.getElementById("sprays").hidden = true; return; }
+    grid.innerHTML = "";
+    var list = C.sprays.filter(matches);
+    document.getElementById("sprays").hidden = !list.length;
+    if (!list.length) return;
     var intro = document.getElementById("spraysIntro");
     if (C.info.sprays_intro) intro.textContent = C.info.sprays_intro; else intro.hidden = true;
-    C.sprays.forEach(function (s) {
+    list.forEach(function (s) {
       var g = glyph(s);
       grid.appendChild(el("button", { class: "tile" + (s.inStock ? "" : " is-out"), type: "button", onclick: function () { openSpray(s); } }, [
         s.img ? el("div", { class: "tile__img" }, [el("img", { src: s.img, alt: "", loading: "lazy" })])
               : el("div", { class: "tile__glyph" + (g.word ? " is-word" : ""), "aria-hidden": "true" }, [el("span", { text: g.text })]),
-        s.family ? el("p", { class: "tile__family", text: s.family }) : null,
+        fams(s).length ? el("p", { class: "tile__family", text: fams(s).join(" · ") }) : null,
         el("div", { class: "tile__title", text: s.title }),
         el("p", { class: "tile__tag", text: (s.subtitle || "").replace(/^[　-鿿]+\s*—\s*/, "") || "Спрей для дома и тела" }),
         el("div", { class: "tile__price", text: s.prices.map(function (x) { return x.v; }).join(" · ") + (minPrice(s.prices) ? " · " + minPrice(s.prices) : "") }),
@@ -288,6 +330,17 @@
     return n;
   }
 
+  function defaultImg(p) {
+    var pr = p.prices[p.prices.length > 1 ? 1 : 0];
+    return (pr && p.imgs && p.imgs[String(pr.ml)]) || p.img;
+  }
+  // Фото флакона под выбранный объём (если для него есть своё фото).
+  function showVolume(item, ml) {
+    var src = item.imgs && item.imgs[String(ml)];
+    var img = document.querySelector(".pd__img img");
+    if (src && img && img.getAttribute("src") !== src) img.setAttribute("src", src);
+  }
+
   function buyBlock(item, prices, kind) {
     if (!item.inStock) {
       return el("div", {}, [
@@ -306,6 +359,7 @@
     prices.forEach(function (pr) {
       chips.appendChild(el("button", { class: "chip", type: "button", "aria-pressed": pr === chosen ? "true" : "false", onclick: function (e) {
         chosen = pr;
+        showVolume(item, pr.ml);
         Array.prototype.forEach.call(chips.children, function (c) { c.setAttribute("aria-pressed", "false"); });
         e.currentTarget.setAttribute("aria-pressed", "true");
       } }, [el("b", { text: pr.v }), pr.label]));
@@ -325,9 +379,9 @@
 
   function openPerfume(p) {
     openSheet([
-      p.img ? el("div", { class: "pd__img" }, [el("img", { src: p.img, alt: "Метафорическая карта аромата «" + p.title + "»" })]) : null,
+      p.img ? el("div", { class: "pd__img" }, [el("img", { src: defaultImg(p), alt: "Флакон «" + p.title + "»" })]) : null,
       el("div", { class: "pd" }, [
-        el("p", { class: "label", text: "Масляные духи · №" + pad(p.n) + (p.family ? " · " + p.family : "") }),
+        el("p", { class: "label", text: "Масляные духи · №" + pad(p.n) + (fams(p).length ? " · " + fams(p).join(", ") : "") }),
         el("h2", { class: "pd__title", text: p.title }),
         p.tagline ? el("p", { class: "pd__tag", text: p.tagline }) : null,
         p.smell ? el("p", { class: "pd__text", text: p.smell }) : null,
