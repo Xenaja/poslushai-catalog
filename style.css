@@ -338,3 +338,5 @@ img { display: block; max-width: 100%; }
 .top__brand { transition: opacity .3s ease; }
 .top.is-hero .top__brand { opacity: 0; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .top__brand { transition: none; } }
+/* Набор после духов (11.11) */
+.promo + .section { border-top: 0; }
