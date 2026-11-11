@@ -340,3 +340,12 @@ img { display: block; max-width: 100%; }
 @media (prefers-reduced-motion: reduce) { .top__brand { transition: none; } }
 /* Набор после духов (11.11) */
 .promo + .section { border-top: 0; }
+
+/* Передача заказа в чат ВК (11.11) */
+.handoff__step { margin: 0 0 10px; }
+.handoff__text {
+  white-space: pre-wrap; word-break: break-word; margin: 6px 0 18px; padding: 12px 14px;
+  background: var(--paper-2); border-radius: 4px; font-family: var(--serif); font-size: 14px; line-height: 1.5;
+}
+a.btn { text-decoration: none; }
+.pd__hint a { color: inherit; }

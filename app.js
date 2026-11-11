@@ -172,11 +172,22 @@
     if (inTelegram) { tg.openTelegramLink(url); setTimeout(function () { tg.close(); }, 300); }
     else window.open(url, "_blank");
   }
-  function checkoutVK() {
-    copy(cartText()).then(function () {
-      toast("Заказ скопирован — вставьте его в чат");
-      setTimeout(function () { window.open(C.vk, "_blank"); }, 700);
-    });
+  function checkoutVK() { vkHandoff(cartText()); }
+  // ВК: передать заказ в чат можно только текстом. Копируем и показываем
+  // экран-инструкцию с кнопкой-ссылкой (window.open по таймеру браузеры
+  // блокируют как всплывающее окно) и самим текстом — если копирование не вышло.
+  function vkHandoff(text) {
+    copy(text);
+    openSheet([el("div", { class: "cart" }, [
+      el("h2", { class: "cart__title", text: "Почти готово" }),
+      el("p", { class: "handoff__step", text: "1. Мы скопировали заказ." }),
+      el("p", { class: "handoff__step", text: "2. Откройте чат «Послушай» во ВКонтакте, вставьте сообщение и отправьте — бот покажет заказ и поможет оформить." }),
+      el("pre", { class: "handoff__text", text: text }),
+      el("div", { class: "pd__actions" }, [
+        el("a", { class: "btn", href: C.vk, target: "_blank", rel: "noopener", text: "Открыть чат во ВКонтакте" }),
+        el("button", { class: "btn btn--ghost", type: "button", text: "Скопировать ещё раз", onclick: function () { copy(text); toast("Скопировано"); } }),
+      ]),
+    ])]);
   }
 
   // ---------- отрисовка: предложение
@@ -372,7 +383,7 @@
           el("button", { class: "btn btn--ghost", type: "button", text: "Сообщить о поступлении", onclick: function () {
             var code = kind === "p" ? item.n + "m" + prices[0].ml : "s" + item.n;
             if (inTelegram || !inVK) { var url = tgLink("o_" + code); inTelegram ? tg.openTelegramLink(url) : window.open(url, "_blank"); }
-            else copy("Заказ из каталога: «" + item.title + "» — сообщить о поступлении").then(function () { toast("Текст скопирован — вставьте его в чат"); setTimeout(function () { window.open(C.vk, "_blank"); }, 700); });
+            else vkHandoff("Заказ из каталога: «" + item.title + "» — сообщить о поступлении");
           } }),
         ]),
       ]);
@@ -412,7 +423,9 @@
         p.about ? el("p", { class: "pd__text pd__muted", text: p.about }) : null,
         p.effect ? el("div", { class: "pd__effect" }, [el("p", { class: "label", text: "Эффект" }), el("p", { text: p.effect.charAt(0).toUpperCase() + p.effect.slice(1) })]) : null,
         buyBlock(p, p.prices, "p"),
-        el("p", { class: "pd__hint", text: "Трек и карту к аромату пришлёт бот" }),
+        el("p", { class: "pd__hint" }, ["Трек и карту-послание к аромату пришлёт ",
+          el("a", { href: tgLink("a_" + p.key), target: "_blank", rel: "noopener", onclick: function (e) {
+            if (inTelegram) { e.preventDefault(); tg.openTelegramLink(tgLink("a_" + p.key)); } } , text: "бот" })]),
       ]),
     ]);
   }
