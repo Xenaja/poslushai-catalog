@@ -499,6 +499,14 @@
   document.getElementById("vkLink").href = C.vk;
   if (C.policy) { var pl = document.getElementById("policyLink"); pl.href = C.policy; pl.hidden = false; }
 
+  // Логотип в шапке — только когда крупный логотип первого экрана ушёл из виду.
+  (function () {
+    var top = document.querySelector(".top"), hero = document.querySelector(".hero__logo");
+    if (!top || !hero || !("IntersectionObserver" in window)) return;
+    top.classList.add("is-hero");
+    new IntersectionObserver(function (es) { top.classList.toggle("is-hero", es[0].isIntersecting); }, { rootMargin: "-60px 0px 0px 0px" }).observe(hero);
+  })();
+
   renderPromo(); renderFilters(); renderPerfumes(); renderSprays(); renderInfo(); renderBar();
 
   if (tg) {
