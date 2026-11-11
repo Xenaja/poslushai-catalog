@@ -22,8 +22,16 @@
   function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* приватный режим */ } }
 
   var startParam = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || "";
-  var isPromo = !!C.promo && (params.get("promo") === "1" || startParam === "promo" || load("poslushai-promo", false));
-  if (isPromo) save("poslushai-promo", true);
+  // Промо-часть (промокод, цена набора по коду, доставка) — только участникам:
+  // пришёл по промо-ссылке (?promo=1) или ввёл код. Помним до закрытия
+  // каталога (sessionStorage), а не навсегда: иначе её видел бы каждый,
+  // кто однажды открыл промо-ссылку (решено 11.11).
+  function sessionFlag(v) {
+    try { if (v) sessionStorage.setItem("poslushai-promo", "1"); return sessionStorage.getItem("poslushai-promo") === "1"; }
+    catch (e) { return !!v; }
+  }
+  try { localStorage.removeItem("poslushai-promo"); } catch (e) { /* старая бессрочная отметка */ }
+  var isPromo = !!C.promo && sessionFlag(params.get("promo") === "1" || startParam === "promo");
 
   // Позиция корзины: {id, kind: "p"|"s"|"n", n, ml, q}
   var cart = load(STORE, []).filter(valid);
@@ -460,7 +468,7 @@
       var v = input.value.replace(/\s+/g, "").toUpperCase();
       if (!v) { input.focus(); return; }
       if (v === String(C.promo.code).toUpperCase()) {
-        isPromo = true; save("poslushai-promo", true);
+        isPromo = true; sessionFlag(true);
         renderPromo(); renderBar(); haptic("medium");
         toast("Промокод принят");
         openCart();
